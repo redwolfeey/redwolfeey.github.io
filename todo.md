@@ -7,6 +7,7 @@ Code-audit status (2026-07-14):
 - `[x]` — implemented in the current codebase
 - `[-]` — partially implemented, incomplete, or still needs hardening/testing
 - `[ ]` — not found in the current codebase
+- `[*]` — update as we go
 
 ## Priority Legend
 
@@ -256,4 +257,4 @@ Code-audit status (2026-07-14):
 
 ## Completed
 
-- [x] Document the current gamemode, installation, round flow, ConVars, commands, persistence, and code layout in `README.md`.
+- [*] Document the current gamemode, installation, round flow, ConVars, commands, persistence, and code layout in `README.md`.
