@@ -18,103 +18,103 @@ Code-audit status (2026-07-14):
 
 ## P0 — Stability and Data Safety
 
-- [-] Validate every client-supplied purchase index and numeric argument server-side. Purchase indexes are resolved against server tables, but unsafe `math.floor(args[1])` calls and incomplete bounds/type validation remain.
-- [-] Reject `NaN`, infinity, decimals where inappropriate, and excessive values in cash and timer commands. Cash commands reject some illegal/negative values, but timers and upper bounds remain unprotected.
-- [-] Add rate limits to purchase, payment, party, and prop-protection network messages. Prop purchases have a 0.25-second cooldown; the other paths do not.
-- [ ] Make cash transfers atomic so interrupted saves cannot duplicate or destroy money.
-- [ ] Replace `Player:UniqueID()` persistence keys with `SteamID64` and provide a migration path.
-- [ ] Persist owned skins and the equipped skin; currently only cash and weapons are serialized.
-- [ ] Add schema/version information to player save files.
-- [ ] Recover gracefully from missing or malformed player data instead of throwing Lua errors.
-- [ ] Save player data on a periodic timer in addition to disconnect and shutdown hooks.
-- [-] Audit timers and delayed callbacks for disconnected/invalid players. Some callbacks check `IsValid`, while round/loadout, weapon-ammo, prop-seller, and UI callbacks still need review.
-- [-] Prevent negative prop health, invalid owners, and duplicate refunds. Refunds validate owners and remove props, but health can fall below zero and there is no explicit one-time refund marker.
-- [ ] Ensure `CleanupMap` cannot refund the same prop more than once.
-- [ ] Handle maps without a water controller with a clear fallback or controlled map change instead of halting the round loop.
-- [ ] Fix misleading ConVar descriptions/defaults in `gamemode/init.lua`.
-- [ ] Add structured server logging for purchases, payments, admin cash changes, and round winners.
+- [x] Validate every client-supplied purchase index and numeric argument server-side. Shop indexes, cash values, phase timers, party invitations, and prop-protection settings are constrained before use.
+- [x] Reject `NaN`, infinity, inappropriate decimals, negatives, and excessive cash/timer values through shared numeric validation.
+- [x] Rate-limit purchases, payments, party actions, and prop-protection network messages per player and action.
+- [x] Protect cash transfers with a disk-backed transaction journal, rollback, and startup recovery.
+- [x] Save players by `SteamID64` and automatically migrate legacy `UniqueID` files when they next connect.
+- [x] Persist owned skins and the equipped skin and restore the equipped model on spawn.
+- [x] Store schema version `2` in player save files.
+- [x] Recover from missing or malformed player data with validated defaults and a structured log entry.
+- [x] Save connected player data every 60 seconds in addition to disconnect and shutdown hooks.
+- [x] Guard player/entity references in delayed gameplay callbacks reviewed during the P0 audit.
+- [x] Clamp prop health, validate refund owners/values, and mark props before sale/refund to prevent duplicate payouts.
+- [x] Make `CleanupMap` refunds one-shot and calculate them from recorded purchase price and remaining-health ratio.
+- [x] Continue rounds without moving water when a map lacks a controller, with a non-halting error and structured log entry.
+- [x] Correct misleading bonus, water-toggle, and normal-player prop-limit ConVar descriptions.
+- [x] Write structured logs for purchases, sales/refunds, transfers, admin balance/timer changes, migrations/errors, missing water, and round winners.
 
 ## P1 — Water, Boats, and Buoyancy
 
 ### Make props float more on the water
 
-- [ ] Design a server-side buoyancy system that supplements Source physics for eligible boat props.
-- [ ] Apply upward force based on how deeply a prop is submerged rather than using a constant upward push.
-- [ ] Scale buoyancy by physics mass and configurable per-model buoyancy values.
-- [ ] Sample several points across large props so wide boats remain stable instead of balancing on their origin.
-- [ ] Add damping to reduce violent bobbing, spinning, and repeated water-surface bouncing.
-- [ ] Preserve player construction choices; do not forcibly level or freeze boats.
-- [ ] Apply buoyancy to player-owned `prop_physics` entities only.
-- [ ] Skip invalid, constrained, held, frozen, destroyed, and explicitly blacklisted entities where appropriate.
-- [ ] Keep the system compatible with welded multi-prop boats and calculate force without multiplying it excessively across assemblies.
-- [ ] Ensure the paddle and propeller tools still move buoyant boats predictably.
-- [ ] Add `flood_buoyancy_enabled` for quickly enabling or disabling enhanced flotation.
-- [ ] Add `flood_buoyancy_multiplier` for global lift tuning.
-- [ ] Add ConVars for damping, update interval, maximum force, and optional debug visualization.
-- [ ] Add per-prop buoyancy metadata to `sh_shoplist.lua` or a dedicated shared configuration file.
-- [ ] Give lightweight wooden/plastic props stronger buoyancy defaults than metal or armor props.
-- [ ] Add a blacklist for props that should sink or behave normally.
-- [ ] Cache physics and model configuration to avoid expensive table scans every tick.
-- [ ] Process buoyancy at a controlled interval and benchmark it with 20, 100, and 300 active props.
-- [ ] Network only debug information that clients actually need.
-- [ ] Test flotation at low, rising, and fully raised water levels.
-- [ ] Test single props, welded rafts, constrained boats, damaged boats, and partially destroyed boats.
-- [ ] Verify two players standing on a small boat do not cause extreme oscillation.
-- [ ] Verify boats cannot use enhanced buoyancy to fly outside water.
-- [ ] Verify buoyancy cannot be exploited to launch props or players at damaging velocities.
-- [ ] Document tuning instructions and recommended values for map authors/server owners.
+- [x] Implement server-side enhanced buoyancy for eligible boat props in `sv_buoyancy.lua`.
+- [x] Scale upward force by the fraction of five sample points currently submerged.
+- [x] Scale buoyancy by physics mass, global tuning, material defaults, and per-item `Buoyancy` values.
+- [x] Sample the center and four quarter-height corners so large props do not balance on their origins.
+- [x] Apply configurable linear and angular damping to reduce bobbing and spinning.
+- [x] Preserve construction angles and motion without forcibly leveling or freezing boats.
+- [x] Restrict enhanced buoyancy to CPPI-owned `prop_physics` entities during flood/fight phases.
+- [x] Skip invalid, held, frozen, refunded/destroyed, ownerless, and blacklisted props while retaining welded boat support.
+- [x] Apply mass-proportional force per welded component so assemblies do not receive an arbitrary assembly multiplier.
+- [-] Verify the paddle and propeller remain predictable with enhanced buoyancy during multiplayer testing.
+- [x] Add `flood_buoyancy_enabled`.
+- [x] Add `flood_buoyancy_multiplier`.
+- [x] Add damping, interval, force-cap, and debug ConVars.
+- [x] Add per-prop `Buoyancy` metadata/defaults to `sh_shoplist.lua`.
+- [x] Give buoyant/wood/plastic props stronger defaults than metal/armor props.
+- [x] Support a model blacklist through per-map JSON configuration.
+- [x] Cache inferred model/material buoyancy multipliers.
+- [-] Process buoyancy at a controlled interval; benchmark 20, 100, and 300 props during the requested server test.
+- [x] Keep debug sampling server-side, with no unnecessary debug networking.
+- [-] Test flotation at low, rising, and fully raised water levels.
+- [-] Test single props, welded rafts, constrained boats, damaged boats, and partially destroyed boats.
+- [-] Verify two players standing on a small boat do not cause extreme oscillation.
+- [-] Verify boats cannot use enhanced buoyancy to fly outside water.
+- [-] Verify the force cap prevents prop/player launch exploits.
+- [x] Document buoyancy tuning, ConVars, per-prop metadata, blacklist, and map configuration in `README.md`.
 
 ### Water system improvements
 
-- [-] Support multiple water controllers with different travel distances and timings. All matching controllers are already opened/closed together; per-controller configuration is absent.
-- [ ] Allow maps to identify water controllers by configurable target names.
-- [ ] Expose water rise and drain speed settings where the map entity supports them.
-- [ ] Add a short warning countdown before the water begins rising.
-- [ ] Add water-level progress to the HUD.
-- [ ] Make water damage ramp up with submersion depth or time submerged.
-- [ ] Add configurable grace time before water starts hurting players.
-- [ ] Improve water damage feedback with sound, screen effects, and clear death attribution.
-- [ ] Detect players trapped below the map or inside invalid geometry after water movement.
-- [ ] Add map-specific water configuration files.
+- [x] Support multiple controllers with per-name rise/drain speeds and delays.
+- [x] Allow maps to identify named controllers through `flood_water_target`/map JSON.
+- [x] Expose global and per-controller rise/drain speed overrides.
+- [x] Show a ten-second phase-change warning before water rises.
+- [x] Show flood-phase water-rise progress on the HUD.
+- [x] Ramp water damage by WaterLevel depth and accumulated exposure time.
+- [x] Add configurable water-damage grace time.
+- [x] Add drowning sounds, a blue damage flash, drowning messages, and world damage attribution.
+- [x] Detect/log/kill active players outside valid world geometry.
+- [x] Load `data/flood/maps/<map>.json` water/controller/buoyancy overrides.
 
 ## P1 — Round and Combat Correctness
 
-- [ ] Decide whether direct PvP damage should be enabled during the fight phase and expose it as a ConVar.
-- [-] Replace the current hard-coded PvP behavior with explicit, documented damage rules. Phase checks exist, but PvP is hard-coded off and several damage paths are implicit.
-- [ ] Prevent damage rewards from exceeding the prop's remaining health.
-- [ ] Credit prop destruction and display the attacker/owner in the kill feed or event feed.
-- [ ] Prevent owners and party members from farming money by damaging friendly props.
-- [ ] Add configurable friendly-fire rules for party members.
-- [ ] Confirm fire, explosions, vehicles, world damage, and physics collisions follow intended phase rules.
+- [x] Expose direct fight-phase PvP through `flood_pvp_enabled` (disabled by default).
+- [x] Replace hard-coded PvP behavior with explicit phase, attacker, and party rules.
+- [x] Cap damage rewards to a prop's actual remaining health.
+- [x] Credit/log prop destruction and announce the attacker in the event feed.
+- [x] Block owner/party prop-damage farming when friendly fire is disabled.
+- [x] Add `flood_party_friendly_fire` for player and prop damage.
+- [-] Exercise fire, explosions, vehicles, world damage, and physics collisions during multiplayer testing.
 - [x] Scale prop health consistently from price, material, mass, or explicit shop configuration. Purchased props use the explicit `Health` value in `sh_shoplist.lua`.
 - [x] Show prop health to its owner and attackers without excessive network traffic. Health is networked on the entity and shown while looking at it.
-- [-] Add winner handling for last survivor, timeouts, disconnects, and simultaneous deaths. Last survivor, same-party survivors, no survivors, and timeout cases exist; edge cases still need testing.
+- [-] Handle last survivor, same-party survivors, no survivors, timeouts, disconnects, and simultaneous deaths; edge cases require multiplayer testing.
 - [x] Prevent a late joiner from affecting winner checks during an active round. Players joining in flood/fight/reset are silently killed and cannot respawn.
-- [ ] Handle the player count dropping below two during build/flood/fight phases.
-- [ ] Add an intermission summary showing winner, survival time, damage, kills, and earnings.
-- [ ] Make timer transitions robust when an admin sets a timer to zero or an invalid value.
-- [ ] Replace global round timer variables with fields owned by the gamemode/round controller.
+- [x] Reset safely when player count drops below two during build/flood; fight winner checks handle the remaining player.
+- [x] Add winner messaging plus an intermission summary with survival, kills, damage, destroyed props, and earnings.
+- [x] Validate/clamp admin timer changes and handle zero-second transitions.
+- [x] Replace global timer variables with `GM.RoundTimes` accessors.
 - [x] Send round state only when it changes or on a reasonable sync interval. Current round state and timers are broadcast once per second.
-- [-] Add warmup/readiness controls for small private servers. The HUD contains a players-readied display, but the round controller still starts solely from the living-player count.
+- [x] Add `/ready`, ready-count networking, and optional `flood_ready_required` gating.
 
 ## P1 — Economy and Shop
 
-- [ ] Create a single authoritative item ID for every prop, weapon, and skin.
-- [ ] Separate shop data into validated categories instead of relying on positional array indexes.
-- [ ] Detect missing weapon classes/models at startup and hide or flag unavailable items.
-- [ ] Decide which M9K packs are officially required and document exact dependencies.
-- [ ] Add configurable starting cash.
-- [ ] Balance participation rewards, winner rewards, prop damage income, and refunds together.
-- [ ] Add a maximum cash setting or safely support very large balances.
+- [x] Generate stable authoritative IDs for every prop, weapon, and skin and use them in purchase commands.
+- [x] Generate validated category names and ID lookup tables while retaining legacy numeric-index compatibility.
+- [x] Detect missing SWEP classes/models after map load, flag them in UI, and reject their purchase server-side.
+- [x] Document the required M9K Small Arms, Assault Rifles, and Heavy Weapons packs.
+- [x] Add `flood_starting_cash`.
+- [-] Expose participation, winner, damage-income, sell, and refund tuning together; final balance needs playtesting.
+- [x] Add and enforce `flood_max_cash`.
 - [x] Prevent buying weapons/skins outside allowed round states through both UI and console commands. Server purchase hooks require waiting/build state.
-- [ ] Add purchase confirmation for expensive items.
-- [-] Show owned, equipped, unavailable, and donator-only states consistently. Ownership/equip and donator checks exist, but unavailable content and presentation consistency remain.
-- [ ] Add search and sorting for the prop, weapon, and skin catalogues.
-- [ ] Display prop health, buoyancy, mass, and refund value before purchase.
-- [ ] Display weapon damage values as gameplay values rather than implying base SWEP damage.
-- [ ] Add configurable sell/refund percentages.
-- [ ] Add transaction history for administrators and players.
-- [ ] Add optional daily/round challenges without making the base economy mandatory.
+- [x] Add confirmation dialogs above `flood_purchase_confirm_threshold`.
+- [x] Synchronize and display owned/equipped, unavailable, and donator-only states.
+- [x] Add search and alphabetical sorting to props, weapons, and skins.
+- [x] Display prop ID/category/health/mass/buoyancy/price/refund information before purchase.
+- [x] Label weapon `Damage` explicitly as Flood prop damage.
+- [x] Add configurable skin sell and prop refund multipliers.
+- [x] Record dated transaction history for purchases, sales, refunds, transfers, and admin changes.
+- [x] Add optional, disabled-by-default per-round damage challenges and configurable rewards.
 
 ## P2 — Building Tools and Prop Protection
 
