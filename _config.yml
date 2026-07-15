@@ -1,7 +1,7 @@
-#theme
+# Theme
 remote_theme: pages-themes/midnight@v0.2.0
 plugins:
-- jekyll-remote-theme # add this line to the plugins list if you already have one
+  - jekyll-remote-theme # add this line to the plugins list if you already have one
 
 # Set the Markdown processor (GFM stands for GitHub Flavored Markdown)
 markdown: GFM
@@ -11,3 +11,11 @@ kramdown:
   input: GFM
   hard_wrap: false
   syntax_highlighter: rouge  # Enables code snippet syntax highlighting
+
+# 🔥 NEW: Apply the theme to ALL your Markdown files
+defaults:
+  - scope:
+      path: "" # Applies to all files in your site
+    values:
+      layout: "default" # Uses the Midnight theme's main layout
+      # If "default" doesn't work well, try changing this to "page" instead
