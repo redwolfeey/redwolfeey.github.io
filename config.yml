@@ -1,0 +1,8 @@
+# Set the Markdown processor (GFM stands for GitHub Flavored Markdown)
+markdown: GFM
+
+# Configure Kramdown settings (the standard underlying parser)
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge  # Enables code snippet syntax highlighting
