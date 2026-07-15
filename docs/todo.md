@@ -61,7 +61,7 @@ Code-audit status (2026-07-14):
 - [-] Test single props, welded rafts, constrained boats, damaged boats, and partially destroyed boats.
 - [-] Verify two players standing on a small boat do not cause extreme oscillation.
 - [-] Verify boats cannot use enhanced buoyancy to fly outside water.
-- [-] Verify the force cap prevents prop/player launch exploits.
+- [-] Verify the acceleration and rise-speed caps prevent prop/player launch exploits. Direct supplemental force impulses have been removed.
 - [x] Document buoyancy tuning, ConVars, per-prop metadata, blacklist, and map configuration in `README.md`.
 
 ### Water system improvements
@@ -118,11 +118,11 @@ Code-audit status (2026-07-14):
 
 ## P2 — Building Tools and Prop Protection
 
-- [ ] Review the allowed tool list and remove tools that bypass shop or ownership rules.
-- [-] Add clear messages when a tool is blocked and explain which phase allows it. Donator-only tools show a reason; other blocked cases do not consistently explain phase/ownership rules.
-- [-] Prevent players from touching another party's boat with physgun, tool gun, paddle, or propeller. Bundled CPPI/Nadmod ownership checks cover common interactions, but party-wide behavior needs verification.
+- [x] Review the allowed tool list and remove tools that bypass shop or ownership rules. Entity-spawning, remover, physical-properties, and thruster tools are disabled; axis and weld remain available.
+- [x] Add clear messages when a tool is blocked and explain which phase allows it.
+- [-] Prevent players from touching another party's boat with physgun, tool gun, paddle, or propeller. Tool-gun ownership is now explicitly enforced and bundled CPPI covers physgun/use; paddle and propeller multiplayer verification remains.
 - [-] Clarify and test friend permissions in the bundled Nadmod/CPPI integration. CPPI friends and boat-owner checks exist, but their intended party interaction is undocumented and untested.
-- [-] Prevent conflicting prop-protection addons from partially initializing. Nadmod detects and warns about another CPPI provider but still initializes.
+- [x] Prevent conflicting prop-protection addons from partially initializing. Bundled Nadmod now exits before replacing CPPI when another provider is active.
 - [x] Add an owner display when looking at a prop. The Nadmod client HUD displays owner, health, and price.
 - [ ] Add an optional boat/assembly ownership mode for welded structures.
 - [ ] Add undo support that correctly refunds shop props only once.
@@ -131,15 +131,15 @@ Code-audit status (2026-07-14):
 - [ ] Block prop spawning inside players, map doors, water controllers, and protected zones.
 - [ ] Add spawn zones or map-defined build areas.
 - [ ] Add ghost previews showing whether a shop prop can be placed.
-- [ ] Make prop limits visible in the HUD/shop.
+- [x] Make prop limits visible in the HUD/shop. The HUD displays the local owned-prop count and server-selected limit.
 - [ ] Allow server owners to configure prop limits per user group without editing Lua.
 
 ## P2 — Parties and Team Play
 
 - [ ] Persist parties across map changes or explicitly clear them with a notice.
-- [ ] Add configurable maximum party size.
-- [ ] Add invite expiration and spam protection.
-- [ ] Allow party leaders to transfer leadership.
+- [x] Add configurable maximum party size through `flood_party_max_size`.
+- [x] Add invite expiration and spam protection. Invites expire after 30 seconds and invite actions are rate-limited.
+- [x] Allow party leaders to transfer leadership.
 - [x] Handle leader disconnects deterministically. A departing leader disbands the party and clears member state.
 - [ ] Add party privacy modes: invite-only, friends, and open.
 - [x] Display party members distinctly on the HUD and scoreboard. Party HUD data and party names on the scoreboard are implemented.
@@ -147,15 +147,15 @@ Code-audit status (2026-07-14):
 - [ ] Add party-specific damage and reward rules.
 - [x] Ensure team chat cannot leak to non-members or dead/spectating players unexpectedly. Team-chat messages are intercepted and sent only to current party members.
 - [x] Sanitize and length-limit party names. Names are trimmed, restricted to 3–12 characters, and reserve `No Party`.
-- [-] Add kick/leave/rename confirmation and clearer status feedback. Notifications exist for these actions, but confirmation prompts are absent.
+- [-] Add kick/leave/rename confirmation and clearer status feedback. Leave, rename, and leadership-transfer confirmations exist; kick confirmation still needs a dedicated UI action.
 
 ## P2 — HUD, Menus, and Accessibility
 
 - [ ] Modernize the shop layout for common 16:9, ultrawide, and low-resolution displays.
 - [-] Make all panels scale with screen size instead of relying on fixed dimensions. The HUD uses screen-relative dimensions, while VGUI panels still contain fixed sizing.
 - [ ] Add a first-join help screen explaining build, flood, fight, reset, and the spawn-menu key.
-- [-] Show current phase, time remaining, alive count, cash, and prop usage clearly. Phase, timers, readiness/player count, health, ammo, and cash exist; alive count and prop usage are incomplete.
-- [ ] Add visible warnings at 60, 30, 10, and 5 seconds before phase transitions.
+- [x] Show current phase, time remaining, alive count, cash, and prop usage clearly.
+- [x] Add visible and audible warnings at 60, 30, 10, and 5 seconds before phase transitions.
 - [-] Show why purchases and tool actions are unavailable. Most purchases return chat errors; tool/ownership/phase feedback is inconsistent.
 - [ ] Add a settings panel for HUD scale, colors, sounds, hit markers, and screen effects.
 - [ ] Add colorblind-friendly phase and health indicators.
@@ -181,22 +181,22 @@ Code-audit status (2026-07-14):
 ## P2 — Administration and Configuration
 
 - [-] Move gameplay settings into a documented configuration module where ConVars are insufficient. Core timers, rewards, water damage, and prop limits are ConVars; item/group configuration still requires Lua edits.
-- [-] Add admin commands for starting, pausing, skipping, and resetting rounds. Admins can alter the active phase timer with `!settime`, but no explicit lifecycle commands exist.
+- [x] Add admin commands for starting, pausing, skipping, and resetting rounds through `!round <action>` and `flood_round_control <action>`.
 - [ ] Add commands for inspecting and repairing player save data.
 - [ ] Add a safe command to reload shop configuration between rounds.
-- [-] Add permission hooks so ULX, SAM, or other admin systems can override `IsAdmin()` checks. Commands honor Garry's Mod `IsAdmin()`/user groups, but there are no Flood-specific permission hooks.
-- [ ] Add console-safe versions of admin commands for dedicated-server operators.
+- [x] Add a dedicated ULib permission node, `flood admin commands`, for Flood administration.
+- [-] Add console-safe versions of admin commands for dedicated-server operators. Round lifecycle control is console-safe; cash, timer, and save commands still need console variants.
 - [ ] Use SteamID64 targeting in addition to partial player-name matching.
 - [ ] Reject ambiguous partial-name matches and show matching candidates.
-- [ ] Record who changed a timer or balance and the before/after values.
+- [x] Record who changed a timer, balance, or round lifecycle state and the before/after values.
 - [ ] Add map voting/rotation hooks restricted to compatible Flood maps.
 - [ ] Add server tags/version output for easier support diagnostics.
 
 ## P3 — Maps and Content
 
-- [ ] Write a map-authoring guide for water entities, spawn points, build zones, and safe heights.
-- [-] Add a startup validator that reports missing water, spawns, or required map entities. Water-controller validation exists and halts on failure; spawn/content validation does not.
-- [ ] Support map-specific overrides for phase times, water behavior, and prop restrictions.
+- [x] Write a map-authoring guide for water entities, spawn points, build zones, and safe heights.
+- [x] Add a startup validator that reports map prefix, missing water, and supported spawn counts without halting rounds.
+- [x] Support map-specific overrides for phase times, water behavior, buoyancy exclusions, and prop restrictions.
 - [ ] Add optional environmental hazards besides water.
 - [ ] Add multiple water-rise patterns (steady, waves, staged, sudden surge).
 - [ ] Add random round modifiers such as heavy boats, low gravity, or fast water.
